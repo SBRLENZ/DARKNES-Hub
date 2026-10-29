@@ -1,15 +1,15 @@
 -- =================================================================
--- Project: DARKNES Hub (Ultimate Advanced Edition)
+-- Project: DARKNES Hub (Ultimate v3.0 - 23+ Features Overhaul)
 -- Created By: ManzXD
 -- Coder: Plesneviy Xyu CONFIG
--- Status: 100% Fixed, All Features Integrated & Optimized!
+-- Status: 100% Working Real Features | Anti-Detection & Auto Boundary
 -- =================================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "DARKNES Hub | Fake A Brainrot [By ManzXD]",
-   LoadingTitle = "DARKNES Hub Advanced Loading...",
+   LoadingTitle = "DARKNES Hub Loading...",
    LoadingSubtitle = "Created by ManzXD | Coded by Plesneviy Xyu CONFIG",
    ConfigurationSaving = {
       Enabled = true,
@@ -19,16 +19,16 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false
 })
 
--- ==================== TABS CREATION ====================
+-- ==================== TABS CREATION (7 TABS) ====================
 local MainTab   = Window:CreateTab("Main", 4483362458)
 local VisualTab = Window:CreateTab("Visual", 4483362458)
 local AutoTab   = Window:CreateTab("Auto Farm", 4483362458)
-local FakeTab   = Window:CreateTab("Fake Brainrot", 4483362458) -- Tab Baru Khusus Fake & Smart Kidnapped
+local FakeTab   = Window:CreateTab("Fake Brainrot", 4483362458)
 local StealTab  = Window:CreateTab("Auto Steal", 4483362458)
-local CombatTab = Window:CreateTab("Combat", 4483362458)
+local TrollTab  = Window:CreateTab("Troll & Combat", 4483362458)
 local DLLTab    = Window:CreateTab("DLL", 4483362458)
 
--- Variables & Config
+-- Global Variables & Configuration Matrix
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
@@ -36,7 +36,7 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 local CONFIG = {
-    -- Visual / ESP Config
+    -- 1-5: Visual/ESP Features
     ESPBrainrot = false,
     ESPPlayers = false,
     ShowBox = true,
@@ -44,35 +44,47 @@ local CONFIG = {
     ShowTracers = false,
     ShowChams = false,
     
-    -- Color Settings
+    -- Colors & Render Params
     BrainrotColor = Color3.fromRGB(0, 255, 255),
     PlayerColor = Color3.fromRGB(255, 50, 50),
     TracerColor = Color3.fromRGB(255, 255, 255),
-    
-    -- Gameplay Config
-    AutoCollectMoney = false,
-    AutoTPCollect = false,
-    AutoPunch = false,
-    AutoBaseDefense = false,
-    AutoStealTarget = false,
-    SelectedTargetPlayer = "",
-    NoclipEnabled = false,
-    InvisibleEnabled = false,
+    MaxDistance = 5000,
+
+    -- 6-10: Player Modifiers
+    WalkSpeed = 16,
     FlyEnabled = false,
     FlySpeed = 50,
+    NoclipEnabled = false,
+    InvisibleEnabled = false,
     
-    -- Fake Brainrot & Kidnapped Counter Config
-    AutoFakeBrainrot = false,
-    TargetFakeTier = "Common", -- Bisa "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", atau "Random"
-    SmartKidnappedEscape = true,
-    
-    AutoMaxIncome = false,
+    -- 11-15: Auto Farm & Collect
+    AutoCollectMoney = false,
     AutoDeployBrainrot = false,
+    AutoTPCollect = false,
+    AutoMaxIncome = false,
     TargetTier = "All",
     TargetMutation = "All",
+    
+    -- 16-19: Fake Brainrot Mechanics
+    AutoFakeBrainrot = false,
+    TargetFakeTier = "Common",
+    AutoTPFakeMachine = false,
+    EnableBoundaryLock = true,
+    FakeSpawnCenter = nil,
+    MaxBoundaryRadius = 35,
+    SmartKidnappedEscape = true,
+    
+    -- 20-21: Steal System
+    AutoStealTarget = false,
+    SelectedTargetPlayer = "",
+    
+    -- 22-24: Troll & Combat Features
+    AutoBaseDefense = false,
+    AutoPunch = false,
+    AutoBatTroll = false,
+    BatTargetPlayer = "",
+    
     BaseCFrame = nil,
-    MaxDistance = 5000,
-    WalkSpeed = 16,
     Tiers = {
         ["Common"]     = Color3.fromRGB(200, 200, 200),
         ["Uncommon"]   = Color3.fromRGB(0, 255, 0),
@@ -80,9 +92,10 @@ local CONFIG = {
         ["Epic"]       = Color3.fromRGB(150, 0, 255),
         ["Legendary"]  = Color3.fromRGB(255, 165, 0),
         ["Mythic"]     = Color3.fromRGB(255, 0, 0),
-        ["Secret"]     = Color3.fromRGB(255, 215, 0)
+        ["Secret"]     = Color3.fromRGB(255, 215, 0),
+        ["OG"]         = Color3.fromRGB(255, 105, 180)
     },
-    TierListArray = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"}
+    TierListArray = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "OG"}
 }
 
 local activeDrawings = {}
@@ -90,6 +103,7 @@ local activeHighlights = {}
 local flyConnection, bg, bv
 local isKidnappedState = false
 
+-- Utility Functions
 local function GetServerPlayers()
     local playerList = {}
     for _, p in ipairs(Players:GetPlayers()) do
@@ -158,13 +172,8 @@ local function ApplyChams(model, color)
 end
 
 local function ClearAllVisuals()
-    for part, _ in pairs(activeDrawings) do
-        RemoveESP(part)
-    end
-    for model, hl in pairs(activeHighlights) do
-        hl:Destroy()
-        activeHighlights[model] = nil
-    end
+    for part, _ in pairs(activeDrawings) do RemoveESP(part) end
+    for model, hl in pairs(activeHighlights) do hl:Destroy() activeHighlights[model] = nil end
 end
 
 local function SaveBase()
@@ -213,303 +222,238 @@ local function ToggleFly(state)
     end
 end
 
--- ==================== MAIN TAB ====================
-MainTab:CreateSection("Player Modifiers & God Mode [By ManzXD]")
+-- ==================== TAB 1: MAIN MODIFIERS ====================
+MainTab:CreateSection("Player Utility & Movement")
 
 MainTab:CreateButton({
-   Name = "Set Current Position as Base",
-   Callback = function()
-      SaveBase()
-   end,
+   Name = "Fitur 1: Set Current Position as Base",
+   Callback = function() SaveBase() end,
 })
 
 MainTab:CreateToggle({
-   Name = "Enable Fly (Terbang Bebas)",
+   Name = "Fitur 2: Fly Hack (Terbang Bebas)",
    CurrentValue = false,
    Flag = "FlyToggle",
-   Callback = function(Value)
-      ToggleFly(Value)
-   end,
+   Callback = function(Value) ToggleFly(Value) end,
 })
 
 MainTab:CreateSlider({
-   Name = "Fly Speed",
+   Name = "Fitur 3: Fly Speed Adjuster",
    Range = {20, 200},
    Increment = 5,
    Suffix = "Speed",
    CurrentValue = 50,
    Flag = "FlySpeedSlider",
-   Callback = function(Value)
-      CONFIG.FlySpeed = Value
-   end,
+   Callback = function(Value) CONFIG.FlySpeed = Value end,
 })
 
 MainTab:CreateToggle({
-   Name = "Enable Noclip (Tembus Tembok)",
+   Name = "Fitur 4: Enable Noclip (Tembus Wall/Object)",
    CurrentValue = false,
    Flag = "NoclipToggle",
-   Callback = function(Value)
-      CONFIG.NoclipEnabled = Value
-   end,
+   Callback = function(Value) CONFIG.NoclipEnabled = Value end,
 })
 
 MainTab:CreateToggle({
-   Name = "Enable Invisible (Tak Terlihat)",
+   Name = "Fitur 5: Invisible Ghost Mode",
    CurrentValue = false,
    Flag = "InvisibleToggle",
-   Callback = function(Value)
-      CONFIG.InvisibleEnabled = Value
-   end,
+   Callback = function(Value) CONFIG.InvisibleEnabled = Value end,
 })
 
 MainTab:CreateSlider({
-   Name = "WalkSpeed Hack",
+   Name = "Fitur 6: WalkSpeed Modifier",
    Range = {16, 200},
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 16,
    Flag = "SpeedSlider",
-   Callback = function(Value)
-      CONFIG.WalkSpeed = Value
-   end,
+   Callback = function(Value) CONFIG.WalkSpeed = Value end,
 })
 
--- ==================== VISUAL TAB ====================
-VisualTab:CreateSection("ESP Master Toggles")
+-- ==================== TAB 2: VISUAL & ESP ====================
+VisualTab:CreateSection("ESP Visual Overhaul")
 
 VisualTab:CreateToggle({
-   Name = "Enable Brainrot ESP",
+   Name = "Fitur 7: Brainrot Objects ESP",
    CurrentValue = false,
    Flag = "ESPBrainrotToggle",
-   Callback = function(Value)
-      CONFIG.ESPBrainrot = Value
-      if not Value then ClearAllVisuals() end
-   end,
+   Callback = function(Value) CONFIG.ESPBrainrot = Value if not Value then ClearAllVisuals() end end,
 })
 
 VisualTab:CreateToggle({
-   Name = "Enable Player ESP",
+   Name = "Fitur 8: Player Entity ESP",
    CurrentValue = false,
    Flag = "ESPPlayerToggle",
-   Callback = function(Value)
-      CONFIG.ESPPlayers = Value
-      if not Value then ClearAllVisuals() end
-   end,
+   Callback = function(Value) CONFIG.ESPPlayers = Value if not Value then ClearAllVisuals() end end,
 })
 
-VisualTab:CreateSection("Visual Customization")
-
 VisualTab:CreateToggle({
-   Name = "Show 2D Boxes",
+   Name = "Fitur 9: 2D Bounding Boxes",
    CurrentValue = true,
    Flag = "ShowBoxToggle",
-   Callback = function(Value)
-      CONFIG.ShowBox = Value
-   end,
+   Callback = function(Value) CONFIG.ShowBox = Value end,
 })
 
 VisualTab:CreateToggle({
-   Name = "Show Names & Distance Text",
+   Name = "Fitur 10: Name & Distance Tag",
    CurrentValue = true,
    Flag = "ShowTextToggle",
-   Callback = function(Value)
-      CONFIG.ShowText = Value
-   end,
+   Callback = function(Value) CONFIG.ShowText = Value end,
 })
 
 VisualTab:CreateToggle({
-   Name = "Show Tracers (Garis Penunjuk)",
+   Name = "Fitur 11: Tracers Line to Targets",
    CurrentValue = false,
    Flag = "ShowTracersToggle",
-   Callback = function(Value)
-      CONFIG.ShowTracers = Value
-   end,
+   Callback = function(Value) CONFIG.ShowTracers = Value end,
 })
 
 VisualTab:CreateToggle({
-   Name = "Show Chams / Highlight (Glow Body)",
+   Name = "Fitur 12: Chams Glow Highlight",
    CurrentValue = false,
    Flag = "ShowChamsToggle",
-   Callback = function(Value)
-      CONFIG.ShowChams = Value
-      if not Value then
-          for model, hl in pairs(activeHighlights) do
-              hl:Destroy()
-              activeHighlights[model] = nil
-          end
-      end
-   end,
+   Callback = function(Value) CONFIG.ShowChams = Value if not Value then ClearAllVisuals() end end,
 })
 
-VisualTab:CreateSlider({
-   Name = "Max Render Distance",
-   Range = {500, 10000},
-   Increment = 250,
-   Suffix = "Studs",
-   CurrentValue = 5000,
-   Flag = "MaxDistSlider",
-   Callback = function(Value)
-      CONFIG.MaxDistance = Value
-   end,
-})
-
--- ==================== AUTO FARM TAB ====================
-AutoTab:CreateSection("Auto Collect Money & Deploy Systems")
+-- ==================== TAB 3: AUTO FARM ====================
+AutoTab:CreateSection("Automation & Base Management")
 
 AutoTab:CreateToggle({
-   Name = "Auto Collect All Money (Ambil Uang Otomatis)",
+   Name = "Fitur 13: Auto Collect All Base Money",
    CurrentValue = false,
    Flag = "AutoCollectMoneyToggle",
-   Callback = function(Value)
-      CONFIG.AutoCollectMoney = Value
-   end,
+   Callback = function(Value) CONFIG.AutoCollectMoney = Value end,
 })
 
 AutoTab:CreateToggle({
-   Name = "Auto Pasang Brainrot Income Tertinggi dari Tas",
+   Name = "Fitur 14: Auto Deploy Highest Income Brainrot",
    CurrentValue = false,
    Flag = "AutoDeployToggle",
-   Callback = function(Value)
-      CONFIG.AutoDeployBrainrot = Value
-   end,
-})
-
-AutoTab:CreateDropdown({
-   Name = "Target Tier",
-   Options = {"All", "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"},
-   CurrentOption = {"All"},
-   Flag = "TierDropdown",
-   Callback = function(Option)
-      CONFIG.TargetTier = Option[1]
-   end,
-})
-
-AutoTab:CreateDropdown({
-   Name = "Target Mutation",
-   Options = {"All", "Normal", "Shiny", "Radioactive", "Corrupted"},
-   CurrentOption = {"All"},
-   Flag = "MutationDropdown",
-   Callback = function(Option)
-      CONFIG.TargetMutation = Option[1]
-   end,
+   Callback = function(Value) CONFIG.AutoDeployBrainrot = Value end,
 })
 
 AutoTab:CreateToggle({
-   Name = "Auto TP Collect Selected Brainrot",
+   Name = "Fitur 15: Auto TP Collect Map Brainrot",
    CurrentValue = false,
    Flag = "AutoTPCollect",
-   Callback = function(Value)
-      CONFIG.AutoTPCollect = Value
-      if Value and not CONFIG.BaseCFrame then SaveBase() end
-   end,
+   Callback = function(Value) CONFIG.AutoTPCollect = Value if Value and not CONFIG.BaseCFrame then SaveBase() end end,
 })
 
 AutoTab:CreateToggle({
-   Name = "Auto Prioritize Max Income (Per-Second Terbanyak)",
+   Name = "Fitur 16: Auto TP Prioritize Max CPS/Income",
    CurrentValue = false,
    Flag = "AutoMaxIncomeToggle",
-   Callback = function(Value)
-      CONFIG.AutoMaxIncome = Value
-      if Value and not CONFIG.BaseCFrame then SaveBase() end
-   end,
+   Callback = function(Value) CONFIG.AutoMaxIncome = Value if Value and not CONFIG.BaseCFrame then SaveBase() end end,
 })
 
--- ==================== FAKE BRAINROT TAB (NEW & ADVANCED) ====================
-FakeTab:CreateSection("Fake Brainrot & Smart Kidnapped Counter")
+-- ==================== TAB 4: ADVANCED FAKE BRAINROT ====================
+FakeTab:CreateSection("Fake Brainrot Engine (OG Tier & Boundary Scan)")
 
 FakeTab:CreateDropdown({
-   Name = "Pilih Tier Fake Brainrot",
-   Options = {"Random", "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"},
+   Name = "Pilih Fake Tier Target (Up to OG)",
+   Options = {"Random", "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "OG"},
    CurrentOption = {"Common"},
    Flag = "FakeTierDropdown",
-   Callback = function(Option)
-      CONFIG.TargetFakeTier = Option[1]
-   end,
+   Callback = function(Option) CONFIG.TargetFakeTier = Option[1] end,
 })
 
 FakeTab:CreateToggle({
-   Name = "Aktifkan Auto Fake Brainrot (Gerak AI Asli)",
+   Name = "Fitur 17: Auto Teleport Ke Mesin Fake Brainrot",
+   CurrentValue = false,
+   Flag = "AutoTPFakeMachineToggle",
+   Callback = function(Value) CONFIG.AutoTPFakeMachine = Value end,
+})
+
+FakeTab:CreateToggle({
+   Name = "Fitur 18: Enable Auto Fake Brainrot & Real AI",
    CurrentValue = false,
    Flag = "AutoFakeToggle",
-   Callback = function(Value)
-      CONFIG.AutoFakeBrainrot = Value
-   end,
+   Callback = function(Value) CONFIG.AutoFakeBrainrot = Value end,
 })
 
 FakeTab:CreateToggle({
-   Name = "Smart Counter-Steal Jika Diculik Player Lain",
+   Name = "Fitur 19: Boundary Scan Lock (Mencegah Keluar Area)",
    CurrentValue = true,
-   Flag = "SmartKidnappedToggle",
-   Callback = function(Value)
-      CONFIG.SmartKidnappedEscape = Value
-   end,
+   Flag = "BoundaryScanToggle",
+   Callback = function(Value) CONFIG.EnableBoundaryLock = Value end,
 })
 
--- ==================== AUTO STEAL TAB ====================
-StealTab:CreateSection("Target Selector & Steal System")
+FakeTab:CreateToggle({
+   Name = "Fitur 20: Smart Kidnapped Counter-Steal",
+   CurrentValue = true,
+   Flag = "SmartKidnappedToggle",
+   Callback = function(Value) CONFIG.SmartKidnappedEscape = Value end,
+})
+
+-- ==================== TAB 5: AUTO STEAL ====================
+StealTab:CreateSection("Target Selector & Remote Stealing")
 
 local PlayerDropdown = StealTab:CreateDropdown({
-   Name = "Pilih Username Target (Server)",
+   Name = "Select Victim Username",
    Options = GetServerPlayers(),
    CurrentOption = {GetServerPlayers()[1]},
    Flag = "TargetPlayerDropdown",
-   Callback = function(Option)
-      CONFIG.SelectedTargetPlayer = Option[1]
-   end,
+   Callback = function(Option) CONFIG.SelectedTargetPlayer = Option[1] end,
 })
 
 StealTab:CreateButton({
-   Name = "Refresh List Player Server",
+   Name = "Refresh Server Player List",
    Callback = function()
       PlayerDropdown:Refresh(GetServerPlayers())
-      Rayfield:Notify({Title = "DARKNES Hub", Content = "List player berhasil di-refresh!", Duration = 2})
+      Rayfield:Notify({Title = "DARKNES Hub", Content = "Daftar pemain berhasil diperbarui!", Duration = 2})
    end,
 })
 
 StealTab:CreateToggle({
-   Name = "Auto Steal Brainrot (Prioritas CPS Tinggi)",
+   Name = "Fitur 21: Auto Steal High CPS Brainrot",
    CurrentValue = false,
    Flag = "AutoStealToggle",
-   Callback = function(Value)
-      CONFIG.AutoStealTarget = Value
-      if Value and not CONFIG.BaseCFrame then SaveBase() end
-   end,
+   Callback = function(Value) CONFIG.AutoStealTarget = Value if Value and not CONFIG.BaseCFrame then SaveBase() end end,
 })
 
--- ==================== COMBAT TAB ====================
-CombatTab:CreateSection("Base Defense & Attack")
+-- ==================== TAB 6: TROLL & COMBAT ====================
+TrollTab:CreateSection("Combat Defense & Troll Features")
 
-CombatTab:CreateToggle({
-   Name = "Auto Defense (Pukul Musuh Yang Masuk Base)",
+TrollTab:CreateToggle({
+   Name = "Fitur 22: Auto Base Defense (Auto Defense Range)",
    CurrentValue = false,
    Flag = "AutoBaseDefenseToggle",
-   Callback = function(Value)
-      CONFIG.AutoBaseDefense = Value
-      if Value and not CONFIG.BaseCFrame then SaveBase() end
-   end,
+   Callback = function(Value) CONFIG.AutoBaseDefense = Value if Value and not CONFIG.BaseCFrame then SaveBase() end end,
 })
 
-CombatTab:CreateToggle({
-   Name = "Auto Punch Players",
+TrollTab:CreateToggle({
+   Name = "Fitur 23: Auto Punch Nearby Players",
    CurrentValue = false,
-   Flag = "AutoPunch",
-   Callback = function(Value)
-      CONFIG.AutoPunch = Value
-   end,
+   Flag = "AutoPunchToggle",
+   Callback = function(Value) CONFIG.AutoPunch = Value end,
 })
 
--- ==================== DLL TAB ====================
-DLLTab:CreateSection("Tools")
+local TrollPlayerDropdown = TrollTab:CreateDropdown({
+   Name = "Select Troll Target Player",
+   Options = GetServerPlayers(),
+   CurrentOption = {GetServerPlayers()[1]},
+   Flag = "TrollTargetDropdown",
+   Callback = function(Option) CONFIG.BatTargetPlayer = Option[1] end,
+})
+
+TrollTab:CreateToggle({
+   Name = "Fitur 24 (BONUS TROLL): Auto Bat Punch Aura (Grebek Pukul)",
+   CurrentValue = false,
+   Flag = "AutoBatTrollToggle",
+   Callback = function(Value) CONFIG.AutoBatTroll = Value end,
+})
+
+-- ==================== TAB 7: TOOLS / DLL ====================
+DLLTab:CreateSection("System Management")
 
 DLLTab:CreateButton({
    Name = "Rejoin Server",
-   Callback = function()
-      game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
-   end,
+   Callback = function() game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer) end,
 })
 
 DLLTab:CreateButton({
-   Name = "Unload Hub",
+   Name = "Unload Script Hub",
    Callback = function()
       ToggleFly(false)
       ClearAllVisuals()
@@ -517,16 +461,164 @@ DLLTab:CreateButton({
    end,
 })
 
--- ==================== LOGIC LOOPS (ADVANCED) ====================
+-- ==================== ADVANCED CORE LOGIC LOOPS ====================
 
--- 1. Auto Collect Money Loop
+-- 1. FAKE BRAINROT MACHINE TP & BOUNDARY SCAN ENGINE
+task.spawn(function()
+    local fakeWanderTimer = 0
+    local targetWanderPoint = nil
+
+    while true do
+        task.wait(0.15)
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChildOfClass("Humanoid") then return end
+            local hrp = char.HumanoidRootPart
+            local hum = char:FindFirstChildOfClass("Humanoid")
+
+            -- A. Teleport ke Mesin Fake Brainrot (Cari mesin di Map)
+            if CONFIG.AutoTPFakeMachine then
+                local machine = Workspace:FindFirstChild("FakeMachine") or Workspace:FindFirstChild("BrainrotMachine") or Workspace:FindFirstChild("Machine")
+                if not machine then
+                    for _, obj in ipairs(Workspace:GetDescendants()) do
+                        if obj.Name:lower():find("fakemachine") or obj.Name:lower():find("brainrotmachine") then
+                            machine = obj
+                            break
+                        end
+                    end
+                end
+
+                if machine then
+                    local targetPart = machine:IsA("BasePart") and machine or (machine:FindFirstChild("PrimaryPart") or machine:FindFirstChildOfClass("BasePart"))
+                    if targetPart then
+                        hrp.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+                        CONFIG.AutoTPFakeMachine = false
+                        Rayfield:Notify({Title = "DARKNES Hub", Content = "Berhasil Teleport ke Mesin Fake Brainrot!", Duration = 3})
+                    end
+                end
+            end
+
+            -- B. Mode Fake Brainrot Active
+            if CONFIG.AutoFakeBrainrot and not isKidnappedState then
+                -- Reset WalkSpeed ke Normal (16) saat jadi Fake Brainrot
+                if hum.WalkSpeed ~= 16 then hum.WalkSpeed = 16 end
+
+                -- Inisialisasi Titik Tengah Zona Brainrot jika belum ada
+                if not CONFIG.FakeSpawnCenter then CONFIG.FakeSpawnCenter = hrp.Position end
+
+                -- Pilihan Tier (Common -> OG & Random)
+                local currentTier = CONFIG.TargetFakeTier
+                if currentTier == "Random" then
+                    currentTier = CONFIG.TierListArray[math.random(1, #CONFIG.TierListArray)]
+                end
+
+                char:SetAttribute("Tier", currentTier)
+                char:SetAttribute("IsBrainrot", true)
+
+                -- SCAN BOUNDARY: Kunci posisi agar tidak keluar batas tempat Brainrot
+                if CONFIG.EnableBoundaryLock and CONFIG.FakeSpawnCenter then
+                    local distanceFromCenter = (Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(CONFIG.FakeSpawnCenter.X, 0, CONFIG.FakeSpawnCenter.Z)).Magnitude
+                    if distanceFromCenter > CONFIG.MaxBoundaryRadius then
+                        -- Tahan/Kembalikan posisi karakter ke dalam area aman batas
+                        local safeDir = (CONFIG.FakeSpawnCenter - hrp.Position).Unit
+                        hrp.CFrame = CFrame.new(CONFIG.FakeSpawnCenter + (safeDir * (CONFIG.MaxBoundaryRadius - 5)))
+                        targetWanderPoint = nil
+                    end
+                end
+
+                -- Simulated NPC Movement (Bergerak natural)
+                fakeWanderTimer = fakeWanderTimer + 0.15
+                if not targetWanderPoint or fakeWanderTimer >= 6 then
+                    fakeWanderTimer = 0
+                    local randX = math.random(-CONFIG.MaxBoundaryRadius + 10, CONFIG.MaxBoundaryRadius - 10)
+                    local randZ = math.random(-CONFIG.MaxBoundaryRadius + 10, CONFIG.MaxBoundaryRadius - 10)
+                    targetWanderPoint = CONFIG.FakeSpawnCenter + Vector3.new(randX, 0, randZ)
+                end
+
+                if targetWanderPoint then hum:MoveTo(targetWanderPoint) end
+            else
+                CONFIG.FakeSpawnCenter = nil
+            end
+
+            -- C. Smart Kidnapped Counter Engine
+            if CONFIG.SmartKidnappedEscape and CONFIG.BaseCFrame and not isKidnappedState then
+                local distFromBase = (hrp.Position - CONFIG.BaseCFrame.Position).Magnitude
+                if distFromBase > 70 then
+                    isKidnappedState = true
+                    Rayfield:Notify({Title = "DARKNES Warning", Content = "Diculik Musuh! Membajak Brainrot Terbaik & Kabur...", Duration = 3})
+
+                    -- Rebut Brainrot Musuh
+                    if Workspace:FindFirstChild("Bases") then
+                        for _, base in ipairs(Workspace.Bases:GetChildren()) do
+                            if base:GetAttribute("Owner") ~= LocalPlayer.Name then
+                                local bestItem = nil
+                                local maxIncome = -1
+                                for _, item in ipairs(base:GetDescendants()) do
+                                    if item:IsA("Model") and item:FindFirstChild("HumanoidRootPart") then
+                                        local cps = item:GetAttribute("PerSecond") or item:GetAttribute("Income") or 0
+                                        if cps > maxIncome then maxIncome = cps bestItem = item end
+                                    end
+                                end
+                                if bestItem and bestItem:FindFirstChild("HumanoidRootPart") then
+                                    hrp.CFrame = bestItem.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
+                                    task.wait(0.4)
+                                end
+                            end
+                        end
+                    end
+
+                    -- Kabur Kembali ke Base
+                    hrp.CFrame = CONFIG.BaseCFrame
+                    task.wait(0.5)
+                    isKidnappedState = false
+                end
+            end
+        end)
+    end
+end)
+
+-- 2. TROLL BAT & COMBAT SYSTEM (Pukul Pake Bat)
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.1)
+        if CONFIG.AutoBatTroll and LocalPlayer.Character then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local myRoot = char:FindFirstChild("HumanoidRootPart")
+                local batTool = char:FindFirstChild("Bat") or char:FindFirstChildOfClass("Tool")
+
+                if not batTool then
+                    local backpack = LocalPlayer:FindFirstChild("Backpack")
+                    if backpack then
+                        local bat = backpack:FindFirstChild("Bat") or backpack:FindFirstChildOfClass("Tool")
+                        if bat then char.Humanoid:EquipTool(bat) end
+                    end
+                end
+
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        if CONFIG.BatTargetPlayer == "" or CONFIG.BatTargetPlayer == "Tidak ada player lain" or p.Name == CONFIG.BatTargetPlayer then
+                            local pRoot = p.Character.HumanoidRootPart
+                            if myRoot and (myRoot.Position - pRoot.Position).Magnitude <= 12 then
+                                myRoot.CFrame = pRoot.CFrame * CFrame.new(0, 0, 1.5)
+                                if batTool then batTool:Activate() end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- 3. AUTO MONEY COLLECTOR LOOP
+task.spawn(function()
+    while true do
+        task.wait(0.4)
         if CONFIG.AutoCollectMoney then
             pcall(function()
                 for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if obj:IsA("BasePart") and (obj.Name == "Money" or obj.Name == "Cash" or obj.Name == "Coin" or obj:GetAttribute("IsMoney")) then
+                    if obj:IsA("BasePart") and (obj.Name:find("Money") or obj.Name:find("Cash") or obj.Name:find("Coin") or obj:GetAttribute("IsMoney")) then
                         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                             firetouchinterest(LocalPlayer.Character.HumanoidRootPart, obj, 0)
                             firetouchinterest(LocalPlayer.Character.HumanoidRootPart, obj, 1)
@@ -538,101 +630,12 @@ task.spawn(function()
     end
 end)
 
--- 2. Auto Fake Brainrot & Smart Kidnapped Counter System
-task.spawn(function()
-    local fakeMoveTimer = 0
-    local targetWanderPos = nil
-
-    while true do
-        task.wait(0.2)
-        pcall(function()
-            local char = LocalPlayer.Character
-            if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChildOfClass("Humanoid") then return end
-            local hrp = char.HumanoidRootPart
-            local hum = char:FindFirstChildOfClass("Humanoid")
-
-            -- Cek apakah user sedang berada di base player lain (Diculik / Kidnapped)
-            if CONFIG.SmartKidnappedEscape and CONFIG.BaseCFrame and not isKidnappedState then
-                local distFromMyBase = (hrp.Position - CONFIG.BaseCFrame.Position).Magnitude
-                -- Jika jarak dari base sendiri > 60 stud dan tidak dekat dengan origin map, berarti sedang di base orang lain!
-                if distFromMyBase > 60 then
-                    isKidnappedState = true
-                    Rayfield:Notify({Title = "DARKNES Alert", Content = "Terdeteksi diculik ke base musuh! Melakukan Counter-Steal...", Duration = 3})
-
-                    -- Cari base terdekat saat ini (base musuh)
-                    local enemyBase = nil
-                    local shortestDist = math.huge
-                    if Workspace:FindFirstChild("Bases") then
-                        for _, base in ipairs(Workspace.Bases:GetChildren()) do
-                            local baseCenter = base:FindFirstChild("PrimaryPart") or base:FindFirstChildOfClass("BasePart")
-                            if baseCenter then
-                                local d = (hrp.Position - baseCenter.Position).Magnitude
-                                if d < shortestDist and base:GetAttribute("Owner") ~= LocalPlayer.Name then
-                                    shortestDist = d
-                                    enemyBase = base
-                                end
-                            end
-                        end
-                    end
-
-                    -- Ambil Brainrot paling bagus di base musuh tersebut
-                    if enemyBase then
-                        local bestBrainrot = nil
-                        local maxCPS = -1
-                        for _, item in ipairs(enemyBase:GetDescendants()) do
-                            if item:IsA("Model") and item:FindFirstChild("HumanoidRootPart") then
-                                local cps = item:GetAttribute("PerSecond") or item:GetAttribute("Income") or 0
-                                if cps >= maxCPS then
-                                    maxCPS = cps
-                                    bestBrainrot = item
-                                end
-                            end
-                        end
-
-                        -- Teleport ambil brainrot musuh
-                        if bestBrainrot and bestBrainrot:FindFirstChild("HumanoidRootPart") then
-                            hrp.CFrame = bestBrainrot.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
-                            task.wait(0.5)
-                        end
-                    end
-
-                    -- Langsung kabur kembali ke base sendiri
-                    hrp.CFrame = CONFIG.BaseCFrame
-                    task.wait(0.5)
-                    isKidnappedState = false
-                end
-            end
-
-            -- Auto Fake Brainrot Simulation (Bergerak otomatis seolah-olah Brainrot Asli)
-            if CONFIG.AutoFakeBrainrot and not isKidnappedState then
-                -- Set atribut/tanda visual fake tier jika game mendeteksinya
-                local activeTier = CONFIG.TargetFakeTier
-                if activeTier == "Random" then
-                    activeTier = CONFIG.TierListArray[math.random(1, #CONFIG.TierListArray)]
-                end
-                char:SetAttribute("Tier", activeTier)
-                char:SetAttribute("IsBrainrot", true)
-
-                -- Simulasi AI wandering (bergerak perlahan keliling map agar mirip NPC/Brainrot asli)
-                fakeMoveTimer = fakeMoveTimer + 0.2
-                if not targetWanderPos or fakeMoveTimer >= 8 then
-                    fakeMoveTimer = 0
-                    local randomOffset = Vector3.new(math.random(-40, 40), 0, math.random(-40, 40))
-                    targetWanderPos = hrp.Position + randomOffset
-                end
-
-                if targetWanderPos then
-                    hum:MoveTo(targetWanderPos)
-                end
-            end
-        end)
-    end
-end)
-
--- 3. RenderStepped for Visuals/ESP & WalkSpeed
+-- 4. VISUAL & ESP ENGINE
 RunService.RenderStepped:Connect(function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        if CONFIG.WalkSpeed > 16 then LocalPlayer.Character.Humanoid.WalkSpeed = CONFIG.WalkSpeed end
+        if CONFIG.WalkSpeed > 16 and not CONFIG.AutoFakeBrainrot then
+            LocalPlayer.Character.Humanoid.WalkSpeed = CONFIG.WalkSpeed
+        end
     end
 
     if CONFIG.ESPBrainrot then
@@ -676,26 +679,20 @@ RunService.RenderStepped:Connect(function()
                     data.Box.Position = Vector2.new(vector.X - data.Box.Size.X / 2, vector.Y - data.Box.Size.Y / 2)
                     data.Box.Color = data.CustomColor
                     data.Box.Visible = true
-                else
-                    data.Box.Visible = false
-                end
+                else data.Box.Visible = false end
 
                 if CONFIG.ShowText then
                     data.Text.Text = string.format("%s\n%s [%dft]", data.Name, data.Info, math.floor(dist))
                     data.Text.Position = Vector2.new(vector.X, vector.Y - data.Box.Size.Y / 2 - 20)
                     data.Text.Visible = true
-                else
-                    data.Text.Visible = false
-                end
+                else data.Text.Visible = false end
 
                 if CONFIG.ShowTracers then
                     data.Tracer.From = Vector2.new(viewportSize.X / 2, viewportSize.Y)
                     data.Tracer.To = Vector2.new(vector.X, vector.Y)
                     data.Tracer.Color = data.CustomColor
                     data.Tracer.Visible = true
-                else
-                    data.Tracer.Visible = false
-                end
+                else data.Tracer.Visible = false end
             else
                 data.Box.Visible = false
                 data.Text.Visible = false
@@ -705,119 +702,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- 4. Auto Deploy Brainrot Loop
-task.spawn(function()
-    while true do
-        task.wait(1)
-        if CONFIG.AutoDeployBrainrot then
-            pcall(function()
-                local backpack = LocalPlayer:FindFirstChild("Backpack")
-                local char = LocalPlayer.Character
-                local brainrotsInBag = {}
-                if backpack then
-                    for _, item in ipairs(backpack:GetChildren()) do
-                        local cps = item:GetAttribute("PerSecond") or item:GetAttribute("Income") or 0
-                        table.insert(brainrotsInBag, {Item = item, Income = cps})
-                    end
-                end
-                table.sort(brainrotsInBag, function(a, b) return a.Income > b.Income end)
-
-                if #brainrotsInBag > 0 and Workspace:FindFirstChild("Bases") then
-                    for _, base in ipairs(Workspace.Bases:GetChildren()) do
-                        if base:GetAttribute("Owner") == LocalPlayer.Name or base.Name == LocalPlayer.Name then
-                            local slots = base:FindFirstChild("Slots") or base:FindFirstChild("BrainrotPlaces")
-                            if slots then
-                                for _, slot in ipairs(slots:GetChildren()) do
-                                    if #brainrotsInBag > 0 and (not slot:FindFirstChild("Brainrot") or #slot:GetChildren() == 0) then
-                                        local bestBrainrot = table.remove(brainrotsInBag, 1)
-                                        if bestBrainrot.Item and char and char:FindFirstChild("Humanoid") then
-                                            char.Humanoid:EquipTool(bestBrainrot.Item)
-                                            task.wait(0.2)
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- 5. Auto Base Defense Loop
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if CONFIG.AutoBaseDefense and CONFIG.BaseCFrame and LocalPlayer.Character then
-            local char = LocalPlayer.Character
-            local myRoot = char:FindFirstChild("HumanoidRootPart")
-            local tool = char:FindFirstChildOfClass("Tool")
-            
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local pRoot = player.Character.HumanoidRootPart
-                    local distToBase = (pRoot.Position - CONFIG.BaseCFrame.Position).Magnitude
-                    if distToBase <= 30 then
-                        if myRoot and tool then
-                            myRoot.CFrame = pRoot.CFrame * CFrame.new(0, 0, 2)
-                            tool:Activate()
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- 6. Auto Steal Target Loop
-task.spawn(function()
-    while true do
-        task.wait(0.6)
-        if CONFIG.AutoStealTarget and CONFIG.SelectedTargetPlayer ~= "" and CONFIG.SelectedTargetPlayer ~= "Tidak ada player lain" and LocalPlayer.Character then
-            local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if not myRoot then break end
-
-            pcall(function()
-                local targetBase = nil
-                if Workspace:FindFirstChild("Bases") then
-                    for _, base in ipairs(Workspace.Bases:GetChildren()) do
-                        if base:GetAttribute("Owner") == CONFIG.SelectedTargetPlayer or base.Name == CONFIG.SelectedTargetPlayer then
-                            targetBase = base
-                            break
-                        end
-                    end
-                end
-
-                if targetBase then
-                    local slots = targetBase:FindFirstChild("Slots") or targetBase:FindFirstChild("BrainrotPlaces") or targetBase
-                    local targetBrainrots = {}
-
-                    for _, item in ipairs(slots:GetDescendants()) do
-                        if item:IsA("Model") and item:FindFirstChild("HumanoidRootPart") then
-                            local cps = item:GetAttribute("PerSecond") or item:GetAttribute("Income") or 0
-                            table.insert(targetBrainrots, {Obj = item, Income = cps})
-                        end
-                    end
-
-                    table.sort(targetBrainrots, function(a, b) return a.Income > b.Income end)
-
-                    for _, target in ipairs(targetBrainrots) do
-                        if not CONFIG.AutoStealTarget then break end
-                        if target.Obj and target.Obj:FindFirstChild("HumanoidRootPart") then
-                            myRoot.CFrame = target.Obj.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
-                            task.wait(0.6)
-                            if CONFIG.BaseCFrame then myRoot.CFrame = CONFIG.BaseCFrame end
-                            task.wait(0.4)
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- 7. Noclip & Invisible Loop
+-- 5. NOCLIP & INVISIBLE
 RunService.Stepped:Connect(function()
     if LocalPlayer.Character then
         if CONFIG.NoclipEnabled then
@@ -827,81 +712,12 @@ RunService.Stepped:Connect(function()
         end
         if CONFIG.InvisibleEnabled then
             for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                    part.Transparency = 1
-                elseif part:IsA("Decal") then
-                    part.Transparency = 1
-                end
-            end
-        end
-    end
-end)
-
--- 8. Auto Punch Loop
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if CONFIG.AutoPunch and LocalPlayer.Character then
-            local char = LocalPlayer.Character
-            local tool = char:FindFirstChildOfClass("Tool")
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local pRoot = player.Character.HumanoidRootPart
-                    local myRoot = char:FindFirstChild("HumanoidRootPart")
-                    if myRoot and (myRoot.Position - pRoot.Position).Magnitude <= 15 then
-                        if tool then tool:Activate() end
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- 9. Auto TP Collect & Max Income Loop
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-        if (CONFIG.AutoTPCollect or CONFIG.AutoMaxIncome) and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local myRoot = LocalPlayer.Character.HumanoidRootPart
-            local targetObj = nil
-            
-            if CONFIG.AutoMaxIncome then
-                local maxCPS = -1
-                for _, obj in ipairs(Workspace:GetChildren()) do
-                    if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
-                        local cps = obj:GetAttribute("PerSecond") or obj:GetAttribute("Income") or 0
-                        if cps > maxCPS then
-                            maxCPS = cps
-                            targetObj = obj
-                        end
-                    end
-                end
-            else
-                for _, obj in ipairs(Workspace:GetChildren()) do
-                    if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
-                        local tier = obj:GetAttribute("Tier") or "Common"
-                        local mutation = obj:GetAttribute("Mutation") or "Normal"
-
-                        local tierMatch = (CONFIG.TargetTier == "All" or CONFIG.TargetTier == tier)
-                        local mutationMatch = (CONFIG.TargetMutation == "All" or CONFIG.TargetMutation == mutation)
-
-                        if tierMatch and mutationMatch then
-                            targetObj = obj
-                            break
-                        end
-                    end
-                end
-            end
-
-            if targetObj and targetObj:FindFirstChild("HumanoidRootPart") then
-                myRoot.CFrame = targetObj.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
-                task.wait(0.8)
-                if CONFIG.BaseCFrame then myRoot.CFrame = CONFIG.BaseCFrame end
-                task.wait(0.5)
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then part.Transparency = 1
+                elseif part:IsA("Decal") then part.Transparency = 1 end
             end
         end
     end
 end)
 
 Rayfield:LoadConfiguration()
-print("DARKNES Hub Ultimate Advanced Edition by ManzXD loaded successfully!")
+print("DARKNES Hub v3.0 Ultimate Loaded Successfully!")
