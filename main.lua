@@ -1,15 +1,15 @@
 -- =================================================================
--- Project: DARKNES Hub (God Tier + Auto Deploy Brainrot)
+-- Project: DARKNES Hub (Ultimate Edition - Full Features)
 -- Created By: ManzXD
 -- Coder: Plesneviy Xyu CONFIG
--- Status: Auto-Deploy Highest Income from Bag fully integrated!
+-- Status: 100% Integrated, Clean & Optimized for Termux/GitHub!
 -- =================================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "DARKNES Hub | Fake A Brainrot [By ManzXD]",
-   LoadingTitle = "DARKNES Hub Deploy Edition...",
+   LoadingTitle = "DARKNES Hub Ultimate Loading...",
    LoadingSubtitle = "Created by ManzXD | Coded by Plesneviy Xyu CONFIG",
    ConfigurationSaving = {
       Enabled = true,
@@ -20,11 +20,12 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- ==================== TABS CREATION ====================
-local MainTab = Window:CreateTab("Main", 4483362458)
-local ESPTab = Window:CreateTab("ESP", 4483362458)
-local AutoTab = Window:CreateTab("Auto Farm", 4483362458)
+local MainTab   = Window:CreateTab("Main", 4483362458)
+local VisualTab = Window:CreateTab("Visual", 4483362458)
+local AutoTab   = Window:CreateTab("Auto Farm", 4483362458)
+local StealTab  = Window:CreateTab("Auto Steal", 4483362458)
 local CombatTab = Window:CreateTab("Combat", 4483362458)
-local DLLTab = Window:CreateTab("DLL", 4483362458)
+local DLLTab    = Window:CreateTab("DLL", 4483362458)
 
 -- Variables & Config
 local Players = game:GetService("Players")
@@ -34,10 +35,25 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 local CONFIG = {
+    -- Visual / ESP Config
     ESPBrainrot = false,
     ESPPlayers = false,
+    ShowBox = true,
+    ShowText = true,
+    ShowTracers = false,
+    ShowChams = false,
+    
+    -- Color Settings
+    BrainrotColor = Color3.fromRGB(0, 255, 255),
+    PlayerColor = Color3.fromRGB(255, 50, 50),
+    TracerColor = Color3.fromRGB(255, 255, 255),
+    
+    -- Gameplay Config
     AutoTPCollect = false,
     AutoPunch = false,
+    AutoBaseDefense = false,
+    AutoStealTarget = false,
+    SelectedTargetPlayer = "",
     NoclipEnabled = false,
     InvisibleEnabled = false,
     FlyEnabled = false,
@@ -45,7 +61,7 @@ local CONFIG = {
     AutoFakeBrainrot = false,
     TargetFakeTier = "Common",
     AutoMaxIncome = false,
-    AutoDeployBrainrot = false, -- Status Auto Deploy dari Tas
+    AutoDeployBrainrot = false,
     TargetTier = "All",
     TargetMutation = "All",
     BaseCFrame = nil,
@@ -63,13 +79,30 @@ local CONFIG = {
 }
 
 local activeDrawings = {}
+local activeHighlights = {}
 local flyConnection, bg, bv
+
+local function GetServerPlayers()
+    local playerList = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(playerList, p.Name)
+        end
+    end
+    if #playerList == 0 then table.insert(playerList, "Tidak ada player lain") end
+    return playerList
+end
 
 local function RemoveESP(targetPart)
     if activeDrawings[targetPart] then
-        activeDrawings[targetPart].Box:Remove()
-        activeDrawings[targetPart].Text:Remove()
+        if activeDrawings[targetPart].Box then activeDrawings[targetPart].Box:Remove() end
+        if activeDrawings[targetPart].Text then activeDrawings[targetPart].Text:Remove() end
+        if activeDrawings[targetPart].Tracer then activeDrawings[targetPart].Tracer:Remove() end
         activeDrawings[targetPart] = nil
+    end
+    if activeHighlights[targetPart] then
+        activeHighlights[targetPart]:Destroy()
+        activeHighlights[targetPart] = nil
     end
 end
 
@@ -89,13 +122,47 @@ local function CreateESP(targetPart, nameText, extraInfo, color)
     text.Center = true
     text.Outline = true
 
-    activeDrawings[targetPart] = {Box = box, Text = text, Part = targetPart, Name = nameText, Info = extraInfo}
+    local tracer = Drawing.new("Line")
+    tracer.Visible = false
+    tracer.Color = CONFIG.TracerColor
+    tracer.Thickness = 1.5
+
+    activeDrawings[targetPart] = {
+        Box = box, 
+        Text = text, 
+        Tracer = tracer, 
+        Part = targetPart, 
+        Name = nameText, 
+        Info = extraInfo,
+        CustomColor = color
+    }
+end
+
+local function ApplyChams(model, color)
+    if not model or activeHighlights[model] then return end
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = model
+    highlight.FillColor = color
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.OutlineTransparency = 0
+    activeHighlights[model] = highlight
+end
+
+local function ClearAllVisuals()
+    for part, _ in pairs(activeDrawings) do
+        RemoveESP(part)
+    end
+    for model, hl in pairs(activeHighlights) do
+        hl:Destroy()
+        activeHighlights[model] = nil
+    end
 end
 
 local function SaveBase()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         CONFIG.BaseCFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
-        Rayfield:Notify({Title = "DARKNES Base Saved", Content = "Lokasi Base berhasil disimpan, boss man!", Duration = 3})
+        Rayfield:Notify({Title = "DARKNES Base Saved", Content = "Lokasi Base berhasil disimpan!", Duration = 3})
     end
 end
 
@@ -184,35 +251,6 @@ MainTab:CreateToggle({
    Flag = "InvisibleToggle",
    Callback = function(Value)
       CONFIG.InvisibleEnabled = Value
-      local char = LocalPlayer.Character
-      if char then
-          for _, part in ipairs(char:GetDescendants()) do
-              if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                  part.Transparency = Value and 1 or 0
-              elseif part:IsA("Decal") then
-                  part.Transparency = Value and 1 or 0
-              end
-          end
-      end
-   end,
-})
-
-MainTab:CreateDropdown({
-   Name = "Auto Fake Brainrot Tier",
-   Options = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"},
-   CurrentOption = {"Common"},
-   Flag = "FakeTierDropdown",
-   Callback = function(Option)
-      CONFIG.TargetFakeTier = Option[1]
-   end,
-})
-
-MainTab:CreateToggle({
-   Name = "Auto Jadi Fake Brainrot (Otomatis)",
-   CurrentValue = false,
-   Flag = "AutoFakeToggle",
-   Callback = function(Value)
-      CONFIG.AutoFakeBrainrot = Value
    end,
 })
 
@@ -228,30 +266,82 @@ MainTab:CreateSlider({
    end,
 })
 
--- ==================== ESP TAB ====================
-ESPTab:CreateSection("Brainrot & Player ESP")
+-- ==================== VISUAL TAB ====================
+VisualTab:CreateSection("ESP Master Toggles")
 
-ESPTab:CreateToggle({
+VisualTab:CreateToggle({
    Name = "Enable Brainrot ESP",
    CurrentValue = false,
-   Flag = "ESPEnabled",
+   Flag = "ESPBrainrotToggle",
    Callback = function(Value)
       CONFIG.ESPBrainrot = Value
+      if not Value then ClearAllVisuals() end
+   end,
+})
+
+VisualTab:CreateToggle({
+   Name = "Enable Player ESP",
+   CurrentValue = false,
+   Flag = "ESPPlayerToggle",
+   Callback = function(Value)
+      CONFIG.ESPPlayers = Value
+      if not Value then ClearAllVisuals() end
+   end,
+})
+
+VisualTab:CreateSection("Visual Customization")
+
+VisualTab:CreateToggle({
+   Name = "Show 2D Boxes",
+   CurrentValue = true,
+   Flag = "ShowBoxToggle",
+   Callback = function(Value)
+      CONFIG.ShowBox = Value
+   end,
+})
+
+VisualTab:CreateToggle({
+   Name = "Show Names & Distance Text",
+   CurrentValue = true,
+   Flag = "ShowTextToggle",
+   Callback = function(Value)
+      CONFIG.ShowText = Value
+   end,
+})
+
+VisualTab:CreateToggle({
+   Name = "Show Tracers (Garis Penunjuk)",
+   CurrentValue = false,
+   Flag = "ShowTracersToggle",
+   Callback = function(Value)
+      CONFIG.ShowTracers = Value
+   end,
+})
+
+VisualTab:CreateToggle({
+   Name = "Show Chams / Highlight (Glow Body)",
+   CurrentValue = false,
+   Flag = "ShowChamsToggle",
+   Callback = function(Value)
+      CONFIG.ShowChams = Value
       if not Value then
-          for part, _ in pairs(activeDrawings) do RemoveESP(part) end
+          for model, hl in pairs(activeHighlights) do
+              hl:Destroy()
+              activeHighlights[model] = nil
+          end
       end
    end,
 })
 
-ESPTab:CreateToggle({
-   Name = "Enable Player Brainrot ESP",
-   CurrentValue = false,
-   Flag = "ESPPlayerEnabled",
+VisualTab:CreateSlider({
+   Name = "Max Render Distance",
+   Range = {500, 10000},
+   Increment = 250,
+   Suffix = "Studs",
+   CurrentValue = 5000,
+   Flag = "MaxDistSlider",
    Callback = function(Value)
-      CONFIG.ESPPlayers = Value
-      if not Value then
-          for part, _ in pairs(activeDrawings) do RemoveESP(part) end
-      end
+      CONFIG.MaxDistance = Value
    end,
 })
 
@@ -307,11 +397,52 @@ AutoTab:CreateToggle({
    end,
 })
 
+-- ==================== AUTO STEAL TAB ====================
+StealTab:CreateSection("Target Selector & Steal System")
+
+local PlayerDropdown = StealTab:CreateDropdown({
+   Name = "Pilih Username Target (Server)",
+   Options = GetServerPlayers(),
+   CurrentOption = {GetServerPlayers()[1]},
+   Flag = "TargetPlayerDropdown",
+   Callback = function(Option)
+      CONFIG.SelectedTargetPlayer = Option[1]
+   end,
+})
+
+StealTab:CreateButton({
+   Name = "Refresh List Player Server",
+   Callback = function()
+      PlayerDropdown:Refresh(GetServerPlayers())
+      Rayfield:Notify({Title = "DARKNES Hub", Content = "List player berhasil di-refresh!", Duration = 2})
+   end,
+})
+
+StealTab:CreateToggle({
+   Name = "Auto Steal Brainrot (Prioritas CPS Tinggi)",
+   CurrentValue = false,
+   Flag = "AutoStealToggle",
+   Callback = function(Value)
+      CONFIG.AutoStealTarget = Value
+      if Value and not CONFIG.BaseCFrame then SaveBase() end
+   end,
+})
+
 -- ==================== COMBAT TAB ====================
-CombatTab:CreateSection("Auto Attack Player")
+CombatTab:CreateSection("Base Defense & Attack")
 
 CombatTab:CreateToggle({
-   Name = "Auto Punch / Bat Attack Players",
+   Name = "Auto Defense (Pukul Musuh Yang Masuk Base)",
+   CurrentValue = false,
+   Flag = "AutoBaseDefenseToggle",
+   Callback = function(Value)
+      CONFIG.AutoBaseDefense = Value
+      if Value and not CONFIG.BaseCFrame then SaveBase() end
+   end,
+})
+
+CombatTab:CreateToggle({
+   Name = "Auto Punch Players",
    CurrentValue = false,
    Flag = "AutoPunch",
    Callback = function(Value)
@@ -333,14 +464,88 @@ DLLTab:CreateButton({
    Name = "Unload Hub",
    Callback = function()
       ToggleFly(false)
+      ClearAllVisuals()
       Rayfield:Destroy()
-      for part, _ in pairs(activeDrawings) do RemoveESP(part) end
    end,
 })
 
 -- ==================== LOGIC LOOPS ====================
 
--- Loop Auto Pasang / Deploy Brainrot Dari Tas Ke Slot Kosong Base
+RunService.RenderStepped:Connect(function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        if CONFIG.WalkSpeed > 16 then LocalPlayer.Character.Humanoid.WalkSpeed = CONFIG.WalkSpeed end
+    end
+
+    if CONFIG.ESPBrainrot then
+        for _, obj in ipairs(Workspace:GetChildren()) do
+            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(obj) then
+                local tier = obj:GetAttribute("Tier") or "Common"
+                local mutation = obj:GetAttribute("Mutation") or "Normal"
+                local income = obj:GetAttribute("PerSecond") or 0
+                local col = CONFIG.Tiers[tier] or CONFIG.BrainrotColor
+                CreateESP(obj.HumanoidRootPart, obj.Name, string.format("[%s | %s | +%s/s]", tier, mutation, tostring(income)), col)
+                if CONFIG.ShowChams then ApplyChams(obj, col) end
+            end
+        end
+    end
+
+    if CONFIG.ESPPlayers then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                CreateESP(player.Character.HumanoidRootPart, player.Name, "[PLAYER]", CONFIG.PlayerColor)
+                if CONFIG.ShowChams then ApplyChams(player.Character, CONFIG.PlayerColor) end
+            end
+        end
+    end
+
+    local camera = Workspace.CurrentCamera
+    if not camera then return end
+    local viewportSize = camera.ViewportSize
+
+    for part, data in pairs(activeDrawings) do
+        if not part or not part.Parent then
+            RemoveESP(part)
+        else
+            local vector, onScreen = camera:WorldToViewportPoint(part.Position)
+            local dist = (camera.CFrame.Position - part.Position).Magnitude
+
+            if onScreen and dist <= CONFIG.MaxDistance then
+                local size = camera:WorldToViewportPoint(part.Position + Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(part.Position - Vector3.new(0, 3, 0)).Y
+                
+                if CONFIG.ShowBox then
+                    data.Box.Size = Vector2.new(size * 0.6, size)
+                    data.Box.Position = Vector2.new(vector.X - data.Box.Size.X / 2, vector.Y - data.Box.Size.Y / 2)
+                    data.Box.Color = data.CustomColor
+                    data.Box.Visible = true
+                else
+                    data.Box.Visible = false
+                end
+
+                if CONFIG.ShowText then
+                    data.Text.Text = string.format("%s\n%s [%dft]", data.Name, data.Info, math.floor(dist))
+                    data.Text.Position = Vector2.new(vector.X, vector.Y - data.Box.Size.Y / 2 - 20)
+                    data.Text.Visible = true
+                else
+                    data.Text.Visible = false
+                end
+
+                if CONFIG.ShowTracers then
+                    data.Tracer.From = Vector2.new(viewportSize.X / 2, viewportSize.Y)
+                    data.Tracer.To = Vector2.new(vector.X, vector.Y)
+                    data.Tracer.Color = data.CustomColor
+                    data.Tracer.Visible = true
+                else
+                    data.Tracer.Visible = false
+                end
+            else
+                data.Box.Visible = false
+                data.Text.Visible = false
+                data.Tracer.Visible = false
+            end
+        end
+    end
+end)
+
 task.spawn(function()
     while true do
         task.wait(1)
@@ -348,8 +553,6 @@ task.spawn(function()
             pcall(function()
                 local backpack = LocalPlayer:FindFirstChild("Backpack")
                 local char = LocalPlayer.Character
-                
-                -- Kumpulin semua brainrot yang ada di tas
                 local brainrotsInBag = {}
                 if backpack then
                     for _, item in ipairs(backpack:GetChildren()) do
@@ -357,34 +560,93 @@ task.spawn(function()
                         table.insert(brainrotsInBag, {Item = item, Income = cps})
                     end
                 end
-                
-                -- Sortir dari per-second paling TINGGI ke paling RENDAH
                 table.sort(brainrotsInBag, function(a, b) return a.Income > b.Income end)
 
-                -- Cek slot/tempat brainrot di Base yang masih kosong
                 if #brainrotsInBag > 0 and Workspace:FindFirstChild("Bases") then
                     for _, base in ipairs(Workspace.Bases:GetChildren()) do
                         if base:GetAttribute("Owner") == LocalPlayer.Name or base.Name == LocalPlayer.Name then
                             local slots = base:FindFirstChild("Slots") or base:FindFirstChild("BrainrotPlaces")
                             if slots then
                                 for _, slot in ipairs(slots:GetChildren()) do
-                                    -- Kalau slot kosong dan masih ada brainrot di tas
                                     if #brainrotsInBag > 0 and (not slot:FindFirstChild("Brainrot") or #slot:GetChildren() == 0) then
-                                        local bestBrainrot = table.remove(brainrotsInBag, 1) -- Ambil yang income paling tinggi
-                                        
-                                        -- Equip item lalu pasang ke slot
+                                        local bestBrainrot = table.remove(brainrotsInBag, 1)
                                         if bestBrainrot.Item and char and char:FindFirstChild("Humanoid") then
                                             char.Humanoid:EquipTool(bestBrainrot.Item)
                                             task.wait(0.2)
-                                            
-                                            -- Trigger Remote Event / Touch Interest buat pasang ke slot
-                                            if game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") then
-                                                -- game:GetService("ReplicatedStorage").Remotes.PlaceBrainrot:FireServer(slot)
-                                            end
                                         end
                                     end
                                 end
                             end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if CONFIG.AutoBaseDefense and CONFIG.BaseCFrame and LocalPlayer.Character then
+            local char = LocalPlayer.Character
+            local myRoot = char:FindFirstChild("HumanoidRootPart")
+            local tool = char:FindFirstChildOfClass("Tool")
+            
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local pRoot = player.Character.HumanoidRootPart
+                    local distToBase = (pRoot.Position - CONFIG.BaseCFrame.Position).Magnitude
+                    if distToBase <= 30 then
+                        if myRoot and tool then
+                            myRoot.CFrame = pRoot.CFrame * CFrame.new(0, 0, 2)
+                            tool:Activate()
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.6)
+        if CONFIG.AutoStealTarget and CONFIG.SelectedTargetPlayer ~= "" and CONFIG.SelectedTargetPlayer ~= "Tidak ada player lain" and LocalPlayer.Character then
+            local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if not myRoot then break end
+
+            pcall(function()
+                local targetBase = nil
+                if Workspace:FindFirstChild("Bases") then
+                    for _, base in ipairs(Workspace.Bases:GetChildren()) do
+                        if base:GetAttribute("Owner") == CONFIG.SelectedTargetPlayer or base.Name == CONFIG.SelectedTargetPlayer then
+                            targetBase = base
+                            break
+                        end
+                    end
+                end
+
+                if targetBase then
+                    local slots = targetBase:FindFirstChild("Slots") or targetBase:FindFirstChild("BrainrotPlaces") or targetBase
+                    local targetBrainrots = {}
+
+                    for _, item in ipairs(slots:GetDescendants()) do
+                        if item:IsA("Model") and item:FindFirstChild("HumanoidRootPart") then
+                            local cps = item:GetAttribute("PerSecond") or item:GetAttribute("Income") or 0
+                            table.insert(targetBrainrots, {Obj = item, Income = cps})
+                        end
+                    end
+
+                    table.sort(targetBrainrots, function(a, b) return a.Income > b.Income end)
+
+                    for _, target in ipairs(targetBrainrots) do
+                        if not CONFIG.AutoStealTarget then break end
+                        if target.Obj and target.Obj:FindFirstChild("HumanoidRootPart") then
+                            myRoot.CFrame = target.Obj.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
+                            task.wait(0.6)
+                            if CONFIG.BaseCFrame then myRoot.CFrame = CONFIG.BaseCFrame end
+                            task.wait(0.4)
                         end
                     end
                 end
@@ -418,12 +680,10 @@ task.spawn(function()
         if CONFIG.AutoPunch and LocalPlayer.Character then
             local char = LocalPlayer.Character
             local tool = char:FindFirstChildOfClass("Tool")
-            
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                     local pRoot = player.Character.HumanoidRootPart
                     local myRoot = char:FindFirstChild("HumanoidRootPart")
-                    
                     if myRoot and (myRoot.Position - pRoot.Position).Magnitude <= 15 then
                         if tool then tool:Activate() end
                     end
@@ -471,7 +731,6 @@ task.spawn(function()
             if targetObj and targetObj:FindFirstChild("HumanoidRootPart") then
                 myRoot.CFrame = targetObj.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
                 task.wait(0.8)
-                
                 if CONFIG.BaseCFrame then myRoot.CFrame = CONFIG.BaseCFrame end
                 task.wait(0.5)
             end
@@ -479,57 +738,5 @@ task.spawn(function()
     end
 end)
 
-RunService.RenderStepped:Connect(function()
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        if CONFIG.WalkSpeed > 16 then LocalPlayer.Character.Humanoid.WalkSpeed = CONFIG.WalkSpeed end
-    end
-
-    if CONFIG.ESPBrainrot then
-        for _, obj in ipairs(Workspace:GetChildren()) do
-            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(obj) then
-                local tier = obj:GetAttribute("Tier") or "Common"
-                local mutation = obj:GetAttribute("Mutation") or "Normal"
-                local income = obj:GetAttribute("PerSecond") or 0
-                CreateESP(obj.HumanoidRootPart, obj.Name, string.format("[%s | %s | +%s/s]", tier, mutation, tostring(income)), CONFIG.Tiers[tier])
-            end
-        end
-    end
-
-    if CONFIG.ESPPlayers then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                CreateESP(player.Character.HumanoidRootPart, player.Name, "[PLAYER BRAINROT]", Color3.fromRGB(255, 50, 50))
-            end
-        end
-    end
-
-    local camera = Workspace.CurrentCamera
-    if not camera then return end
-
-    for part, data in pairs(activeDrawings) do
-        if not part or not part.Parent then
-            RemoveESP(part)
-        else
-            local vector, onScreen = camera:WorldToViewportPoint(part.Position)
-            local dist = (camera.CFrame.Position - part.Position).Magnitude
-
-            if onScreen and dist <= CONFIG.MaxDistance then
-                local size = camera:WorldToViewportPoint(part.Position + Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(part.Position - Vector3.new(0, 3, 0)).Y
-                
-                data.Box.Size = Vector2.new(size * 0.6, size)
-                data.Box.Position = Vector2.new(vector.X - data.Box.Size.X / 2, vector.Y - data.Box.Size.Y / 2)
-                data.Box.Visible = true
-
-                data.Text.Text = string.format("%s\n%s [%dft]", data.Name, data.Info, math.floor(dist))
-                data.Text.Position = Vector2.new(vector.X, vector.Y - data.Box.Size.Y / 2 - 20)
-                data.Text.Visible = true
-            else
-                data.Box.Visible = false
-                data.Text.Visible = false
-            end
-        end
-    end
-end)
-
 Rayfield:LoadConfiguration()
-print("Fuck yeah, DARKNES Hub Auto Deploy Brainrot Edition by ManzXD is 100% active, boss man!")
+print("DARKNES Hub Ultimate Edition by ManzXD loaded successfully!")
