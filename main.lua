@@ -1,15 +1,15 @@
 -- =================================================================
--- Project: DARKNES Hub (Ultimate Edition - Full Features)
+-- Project: DARKNES Hub (Ultimate Advanced Edition)
 -- Created By: ManzXD
 -- Coder: Plesneviy Xyu CONFIG
--- Status: 100% Integrated, Clean & Optimized for Termux/GitHub!
+-- Status: 100% Fixed, All Features Integrated & Optimized!
 -- =================================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "DARKNES Hub | Fake A Brainrot [By ManzXD]",
-   LoadingTitle = "DARKNES Hub Ultimate Loading...",
+   LoadingTitle = "DARKNES Hub Advanced Loading...",
    LoadingSubtitle = "Created by ManzXD | Coded by Plesneviy Xyu CONFIG",
    ConfigurationSaving = {
       Enabled = true,
@@ -23,6 +23,7 @@ local Window = Rayfield:CreateWindow({
 local MainTab   = Window:CreateTab("Main", 4483362458)
 local VisualTab = Window:CreateTab("Visual", 4483362458)
 local AutoTab   = Window:CreateTab("Auto Farm", 4483362458)
+local FakeTab   = Window:CreateTab("Fake Brainrot", 4483362458) -- Tab Baru Khusus Fake & Smart Kidnapped
 local StealTab  = Window:CreateTab("Auto Steal", 4483362458)
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 local DLLTab    = Window:CreateTab("DLL", 4483362458)
@@ -49,6 +50,7 @@ local CONFIG = {
     TracerColor = Color3.fromRGB(255, 255, 255),
     
     -- Gameplay Config
+    AutoCollectMoney = false,
     AutoTPCollect = false,
     AutoPunch = false,
     AutoBaseDefense = false,
@@ -58,8 +60,12 @@ local CONFIG = {
     InvisibleEnabled = false,
     FlyEnabled = false,
     FlySpeed = 50,
+    
+    -- Fake Brainrot & Kidnapped Counter Config
     AutoFakeBrainrot = false,
-    TargetFakeTier = "Common",
+    TargetFakeTier = "Common", -- Bisa "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", atau "Random"
+    SmartKidnappedEscape = true,
+    
     AutoMaxIncome = false,
     AutoDeployBrainrot = false,
     TargetTier = "All",
@@ -75,12 +81,14 @@ local CONFIG = {
         ["Legendary"]  = Color3.fromRGB(255, 165, 0),
         ["Mythic"]     = Color3.fromRGB(255, 0, 0),
         ["Secret"]     = Color3.fromRGB(255, 215, 0)
-    }
+    },
+    TierListArray = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"}
 }
 
 local activeDrawings = {}
 local activeHighlights = {}
 local flyConnection, bg, bv
+local isKidnappedState = false
 
 local function GetServerPlayers()
     local playerList = {}
@@ -346,7 +354,16 @@ VisualTab:CreateSlider({
 })
 
 -- ==================== AUTO FARM TAB ====================
-AutoTab:CreateSection("Auto Collect & Deploy Systems")
+AutoTab:CreateSection("Auto Collect Money & Deploy Systems")
+
+AutoTab:CreateToggle({
+   Name = "Auto Collect All Money (Ambil Uang Otomatis)",
+   CurrentValue = false,
+   Flag = "AutoCollectMoneyToggle",
+   Callback = function(Value)
+      CONFIG.AutoCollectMoney = Value
+   end,
+})
 
 AutoTab:CreateToggle({
    Name = "Auto Pasang Brainrot Income Tertinggi dari Tas",
@@ -394,6 +411,37 @@ AutoTab:CreateToggle({
    Callback = function(Value)
       CONFIG.AutoMaxIncome = Value
       if Value and not CONFIG.BaseCFrame then SaveBase() end
+   end,
+})
+
+-- ==================== FAKE BRAINROT TAB (NEW & ADVANCED) ====================
+FakeTab:CreateSection("Fake Brainrot & Smart Kidnapped Counter")
+
+FakeTab:CreateDropdown({
+   Name = "Pilih Tier Fake Brainrot",
+   Options = {"Random", "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"},
+   CurrentOption = {"Common"},
+   Flag = "FakeTierDropdown",
+   Callback = function(Option)
+      CONFIG.TargetFakeTier = Option[1]
+   end,
+})
+
+FakeTab:CreateToggle({
+   Name = "Aktifkan Auto Fake Brainrot (Gerak AI Asli)",
+   CurrentValue = false,
+   Flag = "AutoFakeToggle",
+   Callback = function(Value)
+      CONFIG.AutoFakeBrainrot = Value
+   end,
+})
+
+FakeTab:CreateToggle({
+   Name = "Smart Counter-Steal Jika Diculik Player Lain",
+   CurrentValue = true,
+   Flag = "SmartKidnappedToggle",
+   Callback = function(Value)
+      CONFIG.SmartKidnappedEscape = Value
    end,
 })
 
@@ -469,8 +517,119 @@ DLLTab:CreateButton({
    end,
 })
 
--- ==================== LOGIC LOOPS ====================
+-- ==================== LOGIC LOOPS (ADVANCED) ====================
 
+-- 1. Auto Collect Money Loop
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if CONFIG.AutoCollectMoney then
+            pcall(function()
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") and (obj.Name == "Money" or obj.Name == "Cash" or obj.Name == "Coin" or obj:GetAttribute("IsMoney")) then
+                        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, obj, 0)
+                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, obj, 1)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- 2. Auto Fake Brainrot & Smart Kidnapped Counter System
+task.spawn(function()
+    local fakeMoveTimer = 0
+    local targetWanderPos = nil
+
+    while true do
+        task.wait(0.2)
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChildOfClass("Humanoid") then return end
+            local hrp = char.HumanoidRootPart
+            local hum = char:FindFirstChildOfClass("Humanoid")
+
+            -- Cek apakah user sedang berada di base player lain (Diculik / Kidnapped)
+            if CONFIG.SmartKidnappedEscape and CONFIG.BaseCFrame and not isKidnappedState then
+                local distFromMyBase = (hrp.Position - CONFIG.BaseCFrame.Position).Magnitude
+                -- Jika jarak dari base sendiri > 60 stud dan tidak dekat dengan origin map, berarti sedang di base orang lain!
+                if distFromMyBase > 60 then
+                    isKidnappedState = true
+                    Rayfield:Notify({Title = "DARKNES Alert", Content = "Terdeteksi diculik ke base musuh! Melakukan Counter-Steal...", Duration = 3})
+
+                    -- Cari base terdekat saat ini (base musuh)
+                    local enemyBase = nil
+                    local shortestDist = math.huge
+                    if Workspace:FindFirstChild("Bases") then
+                        for _, base in ipairs(Workspace.Bases:GetChildren()) do
+                            local baseCenter = base:FindFirstChild("PrimaryPart") or base:FindFirstChildOfClass("BasePart")
+                            if baseCenter then
+                                local d = (hrp.Position - baseCenter.Position).Magnitude
+                                if d < shortestDist and base:GetAttribute("Owner") ~= LocalPlayer.Name then
+                                    shortestDist = d
+                                    enemyBase = base
+                                end
+                            end
+                        end
+                    end
+
+                    -- Ambil Brainrot paling bagus di base musuh tersebut
+                    if enemyBase then
+                        local bestBrainrot = nil
+                        local maxCPS = -1
+                        for _, item in ipairs(enemyBase:GetDescendants()) do
+                            if item:IsA("Model") and item:FindFirstChild("HumanoidRootPart") then
+                                local cps = item:GetAttribute("PerSecond") or item:GetAttribute("Income") or 0
+                                if cps >= maxCPS then
+                                    maxCPS = cps
+                                    bestBrainrot = item
+                                end
+                            end
+                        end
+
+                        -- Teleport ambil brainrot musuh
+                        if bestBrainrot and bestBrainrot:FindFirstChild("HumanoidRootPart") then
+                            hrp.CFrame = bestBrainrot.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
+                            task.wait(0.5)
+                        end
+                    end
+
+                    -- Langsung kabur kembali ke base sendiri
+                    hrp.CFrame = CONFIG.BaseCFrame
+                    task.wait(0.5)
+                    isKidnappedState = false
+                end
+            end
+
+            -- Auto Fake Brainrot Simulation (Bergerak otomatis seolah-olah Brainrot Asli)
+            if CONFIG.AutoFakeBrainrot and not isKidnappedState then
+                -- Set atribut/tanda visual fake tier jika game mendeteksinya
+                local activeTier = CONFIG.TargetFakeTier
+                if activeTier == "Random" then
+                    activeTier = CONFIG.TierListArray[math.random(1, #CONFIG.TierListArray)]
+                end
+                char:SetAttribute("Tier", activeTier)
+                char:SetAttribute("IsBrainrot", true)
+
+                -- Simulasi AI wandering (bergerak perlahan keliling map agar mirip NPC/Brainrot asli)
+                fakeMoveTimer = fakeMoveTimer + 0.2
+                if not targetWanderPos or fakeMoveTimer >= 8 then
+                    fakeMoveTimer = 0
+                    local randomOffset = Vector3.new(math.random(-40, 40), 0, math.random(-40, 40))
+                    targetWanderPos = hrp.Position + randomOffset
+                end
+
+                if targetWanderPos then
+                    hum:MoveTo(targetWanderPos)
+                end
+            end
+        end)
+    end
+end)
+
+-- 3. RenderStepped for Visuals/ESP & WalkSpeed
 RunService.RenderStepped:Connect(function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         if CONFIG.WalkSpeed > 16 then LocalPlayer.Character.Humanoid.WalkSpeed = CONFIG.WalkSpeed end
@@ -546,6 +705,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- 4. Auto Deploy Brainrot Loop
 task.spawn(function()
     while true do
         task.wait(1)
@@ -585,6 +745,7 @@ task.spawn(function()
     end
 end)
 
+-- 5. Auto Base Defense Loop
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -609,6 +770,7 @@ task.spawn(function()
     end
 end)
 
+-- 6. Auto Steal Target Loop
 task.spawn(function()
     while true do
         task.wait(0.6)
@@ -655,6 +817,7 @@ task.spawn(function()
     end
 end)
 
+-- 7. Noclip & Invisible Loop
 RunService.Stepped:Connect(function()
     if LocalPlayer.Character then
         if CONFIG.NoclipEnabled then
@@ -674,6 +837,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- 8. Auto Punch Loop
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -693,6 +857,7 @@ task.spawn(function()
     end
 end)
 
+-- 9. Auto TP Collect & Max Income Loop
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -739,4 +904,4 @@ task.spawn(function()
 end)
 
 Rayfield:LoadConfiguration()
-print("DARKNES Hub Ultimate Edition by ManzXD loaded successfully!")
+print("DARKNES Hub Ultimate Advanced Edition by ManzXD loaded successfully!")
